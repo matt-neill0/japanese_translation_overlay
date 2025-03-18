@@ -3,6 +3,11 @@ import win32gui
 from tkinter import messagebox
 from pynput import keyboard, mouse
 
+import configureTranslatorsWindow
+import grabScreen
+import translateText
+
+
 class MyException(Exception):
     pass
 
@@ -33,15 +38,17 @@ class Overlay(tk.Tk):
         self.scrollbar = None
         self.settingsLabel = None
         self.currentBindLabel = None
+        self.bindTitleLabel = None
         self.bindButton = None
         self.bindLabel = None
+        self.APIKeysLabel = None
+        self.APIKeysButton = None
 
         self.set_window_attributes()
 
     ## Add gui elements
     def set_window_attributes(self):
         self.resizable(False, False)
-        self.attributes('-topmost', True)
         self.title("Japanese Translation Overlay")
         self.geometry("400x400+100+100")
 
@@ -59,16 +66,28 @@ class Overlay(tk.Tk):
         self.canvas.create_window((0,0), window=self.secondaryFrame, anchor="nw")
 
         self.settingsLabel = tk.Label(self.secondaryFrame, text="Settings", font=("Helvetica", 14))
-        self.settingsLabel.grid(row=3, column=0, padx=(20,0), pady=(10, 0), sticky="w")
+        self.settingsLabel.grid(row=4, column=0, padx=(20,0), pady=(10, 0), sticky="w")
+
+        self.bindTitleLabel = tk.Label(self.secondaryFrame, text="Rebind click and drag hotkey:", font=("Helvetica", 12))
+        self.bindTitleLabel.grid(row=5, column=0, padx=(20,0), pady=(10,0))
 
         self.bindButton = tk.Button(self.secondaryFrame, text="Rebind key", command=self.bind_click_and_drag_hotkey, font=("Helvetica", 11))
-        self.bindButton.grid(row=4, column=0, padx=(20,60), pady=(10, 0))
+        self.bindButton.grid(row=5, column=1, padx=(20,0), pady=(10, 0))
 
-        self.currentBindLabel = tk.Label(self.secondaryFrame, text="Bound key:", font=("Helvetica", 11))
-        self.currentBindLabel.grid(row=4, column=1, padx=(0,20), pady=(10, 0))
+        self.currentBindLabel = tk.Label(self.secondaryFrame, text="Currently bound key:", font=("Helvetica", 11))
+        self.currentBindLabel.grid(row=6, column=0, padx=(20,0), pady=(10, 0), sticky='w')
 
         self.bindLabel = tk.Label(self.secondaryFrame, text="Mouse5", font=("Helvetica", 11))
-        self.bindLabel.grid(row=4, column=2, padx=(0, 0), pady=(10, 0))
+        self.bindLabel.grid(row=6, column=1, padx=(20, 0), pady=(10, 0))
+
+        self.APIKeysLabel = tk.Label(self.secondaryFrame, text="Configure API keys:", font=("Helvetica", 12))
+        self.APIKeysLabel.grid(row=7, column=0, padx=(20,60), pady=(20,0), sticky="w")
+
+        self.APIKeysButton = tk.Button(self.secondaryFrame, text="Configure", command=self.configure_API_keys, font=("Helvetica", 11))
+        self.APIKeysButton.grid(row=7, column=1, padx=(20,0), pady=(20,0))
+
+    def configure_API_keys(self):
+        configureTranslatorsWindow.ConfigureTranslatorsWindowGui().run("overlay")
 
     def update_overlay(self):
         if win32gui.IsWindow(self.chosenHwnd):
@@ -100,6 +119,8 @@ class Overlay(tk.Tk):
 
 
     def bind_click_and_drag_hotkey(self):
+        self.mouseBindListener.stop()
+        self.keyboardBindListener.stop()
         self.mouseBindListener = mouse.Listener(None, self.on_mouse_bind_click, None)
         self.keyboardBindListener = keyboard.Listener(self.on_keyboard_bind_click, None)
         try:
@@ -108,9 +129,43 @@ class Overlay(tk.Tk):
         except MyException as e:
             print(f'{e.args[0]} was clicked')
 
+    def hotkey_mouse_listen(self, x, y, button, pressed):
+        try:
+            if button == self.clickAndDragHotkey:
+                self.mouseBindListener.stop()
+                grabScreen.start()
+        except AttributeError:
+            messagebox.showerror("Special key exception")
+
+    def hotkey_keyboard_listen(self, key):
+        try:
+            if key == self.clickAndDragHotkey:
+                self.keyboardBindListener.stop()
+                grabScreen.start()
+        except AttributeError:
+            messagebox.showerror("Special key exception")
+
+    def hotkey_listen(self):
+        self.mouseBindListener = mouse.Listener(None, self.hotkey_mouse_listen, None)
+        self.keyboardBindListener = keyboard.Listener(self.hotkey_keyboard_listen, None)
+
+        try:
+            self.mouseBindListener.start()
+            self.keyboardBindListener.start()
+        except MyException as e:
+            print(f'{e.args[0]} was clicked')
+
+    def capture_complete(self):
+        self.hotkey_listen()
+        translateText.frame_ocr("grab.png")
+
     def run(self, chosen_window = None, chosen_hwnd = None):
         self.chosenHwnd = chosen_hwnd
         self.chosenWindow = chosen_window
         if chosen_window is not None and chosen_hwnd is not None:
             self.update_overlay()
+        self.hotkey_listen()
         self.mainloop()
+
+if __name__ == "__main__":
+    Overlay().run()
