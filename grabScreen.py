@@ -1,7 +1,5 @@
 import mss
 from pynput.mouse import Listener
-from PIL import Image
-from io import BytesIO
 import tkinter as tk
 import overlay
 
@@ -31,24 +29,14 @@ def hide_overlay():
         click_and_drag_overlay.destroy()
 
 def grab(x, y, w, h):
-    if x > w:
-        temp = x
-        x = w
-        w = temp
-
-    if y > h:
-        temp = y
-        y = h
-        h = temp
+    print(f"Capturing region: x={x}, y={y}, width={w}, height={h}")
 
     with mss.mss() as sct:
-        region = {"top": y, "left": x, "width": abs(w - x), "height": abs(h - y)}
+        region = {"left": x, "top": y, "width": w, "height": h}
         sct_img = sct.grab(region)
         mss.tools.to_png(sct_img.rgb, sct_img.size, output="grab.png")
-    print("Capture completed.")
-
     overlay.Overlay().capture_complete()
-    print("Capture completed.")
+
 
 click1 = 0
 x1 = 0
@@ -58,14 +46,19 @@ def on_click(x, y, button, pressed):
     global click1, x1, y1, listener
     if pressed:
         if click1 == 0:
-            print("Capturing screen...")
             x1 = x
             y1 = y
             click1 = 1
             start_overlay()
     elif not pressed and click1 == 1:
         hide_overlay()
-        grab(x1, y1, x, y)
+
+        width = abs(x - x1)
+        height = abs(y - y1)
+        x_min = min(x, x1)
+        y_min = min(y, y1)
+
+        grab(x_min, y_min, width, height)
         listener.stop()
         click1 = 0
 

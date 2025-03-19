@@ -1,6 +1,7 @@
 import tkinter as tk
-from tkinter import IntVar, StringVar, Toplevel
-import windowSelector
+from tkinter import IntVar, StringVar
+
+import translateText
 
 class ConfigureTranslatorsWindowGui(tk.Toplevel):
     def __init__(self, *a, **kw):
@@ -42,15 +43,20 @@ class ConfigureTranslatorsWindowGui(tk.Toplevel):
         self.submitButton.grid(columnspan=3, row=2, pady=40, padx=105)
 
     def submit_translation_selections(self):
-        if self.deeplVar.get() or self.googleVar.get() or self.libreVar.get():
+        if self.deeplVar.get() or self.googleVar.get():
             self.destroy()
-            SetTranslatorAPIWindowGui().run(self.deeplVar.get(), self.googleVar.get(), self.libreVar.get(), self.caller)
+            SetTranslatorAPIWindowGui().run(self.deeplVar.get(), self.googleVar.get(), self.caller)
         else:
             self.destroy()
-            windowSelector.WindowSelectorGui().run()
+            if self.caller == "FTS":
+                translateText.ConfigureTesseractPathGui().run(self.caller)
+            else:
+                self.destroy()
 
     def run(self, caller = None):
         self.caller = caller
+        if caller == "FTS":
+            self.master.withdraw()
         self.mainloop()
 
 class SetTranslatorAPIWindowGui(tk.Tk):
@@ -59,7 +65,6 @@ class SetTranslatorAPIWindowGui(tk.Tk):
 
         self.deeplVar = IntVar()
         self.googleVar = IntVar()
-        self.libreVar = IntVar()
         self.deeplAPIVar = StringVar()
         self.googleAPIVar = StringVar()
         self.caller = None
@@ -84,33 +89,32 @@ class SetTranslatorAPIWindowGui(tk.Tk):
         self.titleLabel.grid(columnspan=3, row=0, pady=(50, 0), padx=60)
 
     def get_current_keys(self):
-        with open('API_keys.txt', 'r', encoding='utf-8') as file:
+        with open('user_variables.txt', 'r', encoding='utf-8') as file:
             data = file.readlines()
 
         def split_line(line):
             return line.split()
 
-        if len(data) != 4:
-            ##  Invalid file, reset API_keys.txt
+        if len(data) != 4 and len(data) != 3:
+            ##  Invalid file, reset user_variables.txt
             data.clear()
             while len(data) < 4:
                 data.append("\n")
 
-            with open("API_keys.txt", 'w', encoding='utf-8') as file:
+            with open("user_variables.txt", 'w', encoding='utf-8') as file:
                 file.writelines(data)
 
         else:
             for i in range(1,3):
                 split_data = split_line(data[i])
-
-                if i == 1 and split_data[0] == "deepl:":
-                    self.deeplAPIVar.set(split_data[1])
-                elif i == 2 and split_data[0] == "google:":
-                    self.googleAPIVar.set(split_data[1])
-                elif i == 3 and split_data[0] == "libre:" and split_data[1] == "enabled":
-                    self.libreVar.set(1)
-                elif i == 3 and split_data[0] == "libre:" and split_data[1] == "disabled":
-                    self.libreVar.set(0)
+                if split_data:
+                    if i == 1 and split_data[0] == "deepl:":
+                        self.deeplAPIVar.set(split_data[1])
+                    elif i == 2 and split_data[0] == "google:":
+                        self.googleAPIVar.set(split_data[1])
+                    else:
+                        ##  Invalid entry, reset line
+                        data[i] = "\n"
                 else:
                     ##  Invalid entry, reset line
                     data[i] = "\n"
@@ -137,14 +141,14 @@ class SetTranslatorAPIWindowGui(tk.Tk):
         self.submitButton.grid(columnspan=3, row=3, pady=40)
 
     def submit_api_keys(self):
-        with open('API_keys.txt', 'r', encoding='utf-8') as file:
+        with open('user_variables.txt', 'r', encoding='utf-8') as file:
             data = file.readlines()
 
         if not data:
-            while len(data) < 4:
+            while len(data) < 3:
                 data.append("\n")
-        elif len(data) < 4:
-            while len(data) < 4:
+        elif len(data) < 3:
+            while len(data) < 3:
                 data.append("\n")
 
         data[0] = "keys setup:\n"
@@ -152,28 +156,20 @@ class SetTranslatorAPIWindowGui(tk.Tk):
             data[1]= "deepl: " + self.deeplAPIEntry.get() + "\n"
         if self.googleVar:
             data[2] = "google: " + self.googleAPIEntry.get() + "\n"
-        if self.libreVar:
-            data[3] = "libre: enabled"
-        else:
-            data[3] = "libre: disabled"
 
-        with open("API_keys.txt", 'w', encoding='utf-8') as file:
+        with open("user_variables.txt", 'w', encoding='utf-8') as file:
             file.writelines(data)
 
-        if self.caller == "overlay":
+        if self.caller == "FTS":
             self.destroy()
+            translateText.ConfigureTesseractPathGui().run("FTS")
         else:
             self.destroy()
-            windowSelector.WindowSelectorGui().run()
 
-    def run(self, deepl_var = None, google_var = None, libre_var = None, caller = None):
+    def run(self, deepl_var = None, google_var = None, caller = None):
         self.deeplVar = deepl_var
         self.googleVar = google_var
-        self.libreVar = libre_var
         self.caller = caller
         self.set_translator_api_window_input_attributes()
 
         self.mainloop()
-
-if __name__ == "__main__":
-    ConfigureTranslatorsWindowGui().run("test")

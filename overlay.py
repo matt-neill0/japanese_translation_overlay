@@ -43,6 +43,8 @@ class Overlay(tk.Tk):
         self.bindLabel = None
         self.APIKeysLabel = None
         self.APIKeysButton = None
+        self.tesseractLabel = None
+        self.tesseractButton = None
 
         self.set_window_attributes()
 
@@ -86,8 +88,17 @@ class Overlay(tk.Tk):
         self.APIKeysButton = tk.Button(self.secondaryFrame, text="Configure", command=self.configure_API_keys, font=("Helvetica", 11))
         self.APIKeysButton.grid(row=7, column=1, padx=(20,0), pady=(20,0))
 
+        self.tesseractLabel = tk.Label(self.secondaryFrame, text="Configure tesseract path:", font=("Helvetica", 12))
+        self.tesseractLabel.grid(row=8, column=0, padx=(20,60), pady=(20,0), stick="w")
+
+        self.tesseractButton = tk.Button(self.secondaryFrame, text="Configure", command=self.configure_tesseract, font=("Helvetica", 11))
+        self.tesseractButton.grid(row=8, column=1, padx=(20,0), pady=(20,0))
+
     def configure_API_keys(self):
         configureTranslatorsWindow.ConfigureTranslatorsWindowGui().run("overlay")
+
+    def configure_tesseract(self):
+        translateText.ConfigureTesseractPathGui().run()
 
     def update_overlay(self):
         if win32gui.IsWindow(self.chosenHwnd):
