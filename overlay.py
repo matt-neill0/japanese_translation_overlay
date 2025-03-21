@@ -67,30 +67,31 @@ class Overlay(tk.Tk):
         self.secondaryFrame = tk.Frame(self.canvas)
         self.canvas.create_window((0,0), window=self.secondaryFrame, anchor="nw")
 
+        ##  Row 4 - Settings title line
         self.settingsLabel = tk.Label(self.secondaryFrame, text="Settings", font=("Helvetica", 14))
         self.settingsLabel.grid(row=4, column=0, padx=(20,0), pady=(10, 0), sticky="w")
 
+        ##  Row 5 - Configure bound key line
         self.bindTitleLabel = tk.Label(self.secondaryFrame, text="Rebind click and drag hotkey:", font=("Helvetica", 12))
-        self.bindTitleLabel.grid(row=5, column=0, padx=(20,0), pady=(10,0))
-
+        self.bindTitleLabel.grid(row=5, column=0, padx=(20,0), pady=(10,0), sticky="w")
         self.bindButton = tk.Button(self.secondaryFrame, text="Rebind key", command=self.bind_click_and_drag_hotkey, font=("Helvetica", 11))
         self.bindButton.grid(row=5, column=1, padx=(20,0), pady=(10, 0))
 
+        ##  Row 6 - Bound key line
         self.currentBindLabel = tk.Label(self.secondaryFrame, text="Currently bound key:", font=("Helvetica", 11))
         self.currentBindLabel.grid(row=6, column=0, padx=(20,0), pady=(10, 0), sticky='w')
-
         self.bindLabel = tk.Label(self.secondaryFrame, text="Mouse5", font=("Helvetica", 11))
         self.bindLabel.grid(row=6, column=1, padx=(20, 0), pady=(10, 0))
 
+        ##  Row 7 - Configure API Key line
         self.APIKeysLabel = tk.Label(self.secondaryFrame, text="Configure API keys:", font=("Helvetica", 12))
         self.APIKeysLabel.grid(row=7, column=0, padx=(20,60), pady=(20,0), sticky="w")
-
         self.APIKeysButton = tk.Button(self.secondaryFrame, text="Configure", command=self.configure_API_keys, font=("Helvetica", 11))
         self.APIKeysButton.grid(row=7, column=1, padx=(20,0), pady=(20,0))
 
+        ##  Row 8 - Configure tesseract path line
         self.tesseractLabel = tk.Label(self.secondaryFrame, text="Configure tesseract path:", font=("Helvetica", 12))
         self.tesseractLabel.grid(row=8, column=0, padx=(20,60), pady=(20,0), stick="w")
-
         self.tesseractButton = tk.Button(self.secondaryFrame, text="Configure", command=self.configure_tesseract, font=("Helvetica", 11))
         self.tesseractButton.grid(row=8, column=1, padx=(20,0), pady=(20,0))
 
@@ -166,9 +167,10 @@ class Overlay(tk.Tk):
         except MyException as e:
             print(f'{e.args[0]} was clicked')
 
-    def capture_complete(self):
+    def capture_complete(self, empty = None):
         self.hotkey_listen()
-        translateText.frame_ocr("grab.png")
+        if not empty:
+            translateText.frame_ocr("grab.png")
 
     def run(self, chosen_window = None, chosen_hwnd = None):
         self.chosenHwnd = chosen_hwnd

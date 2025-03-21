@@ -1,11 +1,14 @@
+import numpy as np
 import pytesseract
 import cv2
 from PIL import Image
 import tkinter as tk
-from tkinter import StringVar, filedialog
+from tkinter import StringVar, filedialog, messagebox
+from manga_ocr import MangaOcr
 
 import windowSelector
 
+mocr = MangaOcr()
 
 class ConfigureTesseractPathGui(tk.Toplevel):
     def __init__(self, *a, **kw):
@@ -46,6 +49,7 @@ class ConfigureTesseractPathGui(tk.Toplevel):
 
     def set_tesseract_window_attributes(self):
         self.get_current_path()
+        print(pytesseract.pytesseract.tesseract_cmd)
         self.title("Japanese Translator")
         self.geometry("500x250+100+100")
         self.resizable(False, False)
@@ -100,9 +104,46 @@ class ConfigureTesseractPathGui(tk.Toplevel):
             self.master.withdraw()
         self.mainloop()
 
+def check_path_setup():
+    with open('user_variables.txt', 'r', encoding='utf-8') as file:
+        data = file.readlines()
+
+    if len(data) != 4:
+        messagebox.showerror("Invalid variables file!", "The variables file is incorrect!\nPlease setup you API key and tesseract path again.")
+        return False
+
+    if data[3]:
+        split_data = data[3].split(" ", 1)
+        if split_data[0] == "tesseract_path:":
+            return True
+    return False
+
+def get_path():
+    with open('user_variables.txt', 'r', encoding='utf-8') as file:
+        data = file.readlines()
+
+    split_data = data[3].split(" ", 1)
+    return split_data[1]
 
 def frame_ocr(image_path):
-    img = Image.open(image_path)
+    global mocr
+    if check_path_setup():
+        if pytesseract.pytesseract.tesseract_cmd == "tesseract":
+            pytesseract.pytesseract.tesseract_cmd = get_path()
 
-    text = pytesseract.image_to_string(img, lang='jpn')
+    image = cv2.imread(image_path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    sharpening_kernel = np.array([[0, -1, 0],
+                                  [-1, 5, -1],
+                                  [0, -1, 0]])
+    sharpened = cv2.filter2D(thresh, -1, sharpening_kernel)
+    kernel = np.ones((1, 1), np.uint8)
+    dilated = cv2.dilate(sharpened, kernel, iterations=1)
+    cv2.imwrite("processed_grab.png", image)
+
+    img = Image.open(image_path)
+    text = pytesseract.image_to_string(img, lang="jpn")
     print(text)
+    test = mocr(img)
+    print(test)
