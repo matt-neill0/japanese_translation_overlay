@@ -4,11 +4,8 @@ import cv2
 from PIL import Image
 import tkinter as tk
 from tkinter import StringVar, filedialog, messagebox
-from manga_ocr import MangaOcr
 
 import windowSelector
-
-mocr = MangaOcr()
 
 class ConfigureTesseractPathGui(tk.Toplevel):
     def __init__(self, *a, **kw):
@@ -126,7 +123,6 @@ def get_path():
     return split_data[1]
 
 def frame_ocr(image_path):
-    global mocr
     if check_path_setup():
         if pytesseract.pytesseract.tesseract_cmd == "tesseract":
             pytesseract.pytesseract.tesseract_cmd = get_path()
@@ -145,5 +141,3 @@ def frame_ocr(image_path):
     img = Image.open(image_path)
     text = pytesseract.image_to_string(img, lang="jpn")
     print(text)
-    test = mocr(img)
-    print(test)

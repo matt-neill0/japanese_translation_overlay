@@ -2,9 +2,9 @@ import tkinter as tk
 import win32gui
 from tkinter import messagebox
 from pynput import keyboard, mouse
+from snippingTool import snip_once
 
 import configureTranslatorsWindow
-import grabScreen
 import translateText
 
 
@@ -143,34 +143,29 @@ class Overlay(tk.Tk):
 
     def hotkey_mouse_listen(self, x, y, button, pressed):
         try:
-            if button == self.clickAndDragHotkey:
-                self.mouseBindListener.stop()
-                grabScreen.start()
+            if button == self.clickAndDragHotkey and not pressed:
+                self.after(0, self.do_snip)
         except AttributeError:
             messagebox.showerror("Special key exception")
 
     def hotkey_keyboard_listen(self, key):
         try:
             if key == self.clickAndDragHotkey:
-                self.keyboardBindListener.stop()
-                grabScreen.start()
+                self.after(0, self.do_snip)
         except AttributeError:
             messagebox.showerror("Special key exception")
 
     def hotkey_listen(self):
         self.mouseBindListener = mouse.Listener(None, self.hotkey_mouse_listen, None)
         self.keyboardBindListener = keyboard.Listener(self.hotkey_keyboard_listen, None)
-
         try:
             self.mouseBindListener.start()
             self.keyboardBindListener.start()
         except MyException as e:
             print(f'{e.args[0]} was clicked')
 
-    def capture_complete(self, empty = None):
-        self.hotkey_listen()
-        if not empty:
-            translateText.frame_ocr("grab.png")
+    def do_snip(self):
+        img = snip_once("snip.png")
 
     def run(self, chosen_window = None, chosen_hwnd = None):
         self.chosenHwnd = chosen_hwnd
